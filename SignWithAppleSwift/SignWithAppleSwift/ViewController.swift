@@ -24,30 +24,20 @@ class ViewController: UIViewController {
     
     //MARK: Response to user Authorization
     internal func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization){
-        
         switch authorization.credential {
-        case let credential as ASAuthorizationAppleIDCredential:
-            if let email = credential.email {
-                signWithEmail(email: email)
-            }
-        case let credential as ASPasswordCredential:
-            let user = credential.user
-            signWithUserId(userID: user)
+        // Create an account in your system.
+        case let appleIDCredential as ASAuthorizationAppleIDCredential:
+            _ = appleIDCredential.user
+            _ = appleIDCredential.email
+            appleIDStateChanged(userIdentifier: appleIDCredential.user)
+        case let passwordCredential as ASPasswordCredential:
+            // Sign in using an existing iCloud Keychain credential.
+            _ = passwordCredential.user
+            _ = passwordCredential.password
+            appleIDStateChanged(userIdentifier: passwordCredential.user)
         default: break
         }
     }
-    
-    fileprivate func signWithEmail(email: String){
-        
-    }
-    
-    fileprivate func signWithUserId(userID: String){
-        
-    }
-    
-//    fileprivate func addObserverForAppeIDChangeNotification(){
-//        NotificationCenter.default.addObserver(self, selector: #selector(appleIDStateChanged), name: NSNotification.Name.ASAuthorizationAppleIDProviderCredentialRevoked, object: nil)
-//    }
     
     //MARK: Existing Accounts
     fileprivate func performExistingAccountSetupFlows(){
@@ -60,7 +50,7 @@ class ViewController: UIViewController {
         authorizationController.performRequests()
     }
     
-    //MARK: Open the Dialog
+    //MARK: Open Login Dialog
     @objc func appleIDButtonTapped(){
         let request = ASAuthorizationAppleIDProvider().createRequest()
         request.requestedScopes = [.fullName, .email]
@@ -69,30 +59,30 @@ class ViewController: UIViewController {
         controller.delegate = self
         controller.presentationContextProvider = self
         controller.performRequests()
-        
     }
     
     //MARK: Handling Changes in Apple ID State
-    @objc func appleIDStateChanged(){
-        let provider = ASAuthorizationAppleIDProvider()
-        provider.getCredentialState(forUserID: "") { (credentialState, error) in
-            switch(credentialState){
+    fileprivate func appleIDStateChanged(userIdentifier: String){
+        let appleIDProvider = ASAuthorizationAppleIDProvider()
+        appleIDProvider.getCredentialState(forUserID: userIdentifier) { (credentialState, error) in
+            switch credentialState {
+            // The Apple ID credential is valid. Show Home UI Here
             case .authorized: break
+            // The Apple ID credential is revoked. Show SignIn UI Here.
             case .revoked: break
+            // No credential was found. Show SignIn UI Here.
             case .notFound: break
             default: break
             }
         }
     }
     
-    
-    
 }
 
+//MARK: ASAuthorizationControllerDelegate
 extension ViewController: ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding{
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        
-        return UIWindow()
+        return self.view.window!
     }
     
     
